@@ -1,24 +1,26 @@
 <template>
   <div class="account-form">
     <div class="header">
-      <div class="header-content">
-        <h5 class="title">Учетные записи</h5>
-        <q-btn
-            icon="add"
-            color="primary"
-            @click="addNewAccount"
-            label="Добавить учетную запись"
-            class="add-btn"
-        />
-      </div>
-
-      <div class="hint">
-        <q-icon name="info" size="sm"/>
-        <span>В поле "Метка" вводите текстовые метки через знак ;</span>
-      </div>
+      <h5 class="title">Учетные записи</h5>
+      <q-btn
+          icon="add"
+          color="primary"
+          @click="addNewAccount"
+          label="Добавить учетную запись"
+          class="add-btn"
+      />
     </div>
 
-    <div class="accounts-list">
+    <div class="empty-message" v-if="!accounts.length">
+      <span>Добавьте новую учетную запись</span>
+    </div>
+
+    <div v-if="accounts.length" class="hint">
+      <q-icon name="info" size="sm"/>
+      <span>В поле "Метка" вводите текстовые метки через знак ;</span>
+    </div>
+
+    <div v-if="accounts.length" class="accounts-list">
       <div
           v-for="(account, index) in accounts"
           :key="account.id"
@@ -78,7 +80,7 @@
               v-if="getAccountForm(account.id).type === 'Локальная'"
               v-model="getAccountForm(account.id).password"
               label="Пароль *"
-              type="password"
+              :type="getPasswordFieldType(account.id)"
               hint="Обязательное поле, максимум 100 символов"
               :maxlength="100"
               :error="!getAccountForm(account.id).password && getTouchedFields(account.id)?.password"
@@ -86,7 +88,15 @@
               dense
               outlined
               class="field"
-          />
+          >
+            <template v-slot:append>
+              <q-icon
+                  :name="getPasswordIcon(account.id)"
+                  class="cursor-pointer"
+                  @click="togglePasswordVisibility(account.id)"
+              />
+            </template>
+          </q-input>
         </div>
 
         <div v-if="hasErrors(account.id)" class="error-message">
@@ -106,6 +116,7 @@ const accountsStore = useAccountsStore();
 
 const accountForms = reactive<Record<string, any>>({});
 const touchedFields = reactive<Record<string, any>>({});
+const isPasswordVisible = reactive<Record<string, boolean>>({});
 
 const accountTypeOptions = [
   {label: 'LDAP', value: AccountType.LDAP},
@@ -165,6 +176,7 @@ const removeAccount = (id: string) => {
   accountsStore.removeAccount(id);
   delete accountForms[id];
   delete touchedFields[id];
+  delete isPasswordVisible[id];
 };
 
 const updateAccountLabels = (id: string) => {
@@ -222,43 +234,66 @@ const hasErrors = (id: string): boolean => {
   return (hasLoginError || hasPasswordError) && fields?.login && fields?.password;
 };
 
+const getPasswordFieldType = (accountId: string) => {
+  return isPasswordVisible[accountId] ? 'text' : 'password';
+};
+
+const getPasswordIcon = (accountId: string) => {
+  return isPasswordVisible[accountId] ? 'visibility_off' : 'visibility';
+};
+
+const togglePasswordVisibility = (accountId: string) => {
+  isPasswordVisible[accountId] = !isPasswordVisible[accountId];
+};
+
 watch(accounts, initializeForms, {immediate: true});
 </script>
 
 <style scoped>
 .account-form {
+  display: flex;
+  flex-direction: column;
   max-width: 100%;
   margin: 0 auto;
   padding: 20px;
   background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .header {
-  margin-bottom: 30px;
-}
-
-.header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+
+
+  .add-btn {
+    font-weight: 500;
+    box-shadow: 0 4px 12px var(--shadow-light);
+  }
 }
 
-.title {
+.title, .empty-message {
   color: var(--white);
   font-size: 28px;
   font-weight: 600;
   margin: 0;
   text-shadow: 0 2px 4px var(--shadow-light);
 }
-
-.add-btn {
-  font-weight: 500;
-  box-shadow: 0 4px 12px var(--shadow-light);
+.empty-message {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hint {
+  position: sticky;
+  top: 20px;
+  height: max-content;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -268,14 +303,17 @@ watch(accounts, initializeForms, {immediate: true});
   border-radius: 12px;
   color: var(--white);
   border: 1px solid var(--hint-border);
+  margin-bottom: 20px;
 }
 
 .accounts-list {
-  display: grid;
-  gap: 20px;
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1;
+  overflow: auto;
   padding-right: 8px;
+
 }
 
 .accounts-list::-webkit-scrollbar {
@@ -297,6 +335,7 @@ watch(accounts, initializeForms, {immediate: true});
 }
 
 .account-item {
+  height: max-content;
   padding: 24px;
   border-radius: 16px;
   background: var(--white);
@@ -304,10 +343,6 @@ watch(accounts, initializeForms, {immediate: true});
   backdrop-filter: blur(10px);
   border: 1px solid var(--hint-border);
   transition: all 0.3s ease;
-}
-
-.account-item:hover {
-  box-shadow: 0 12px 40px var(--shadow-medium);
 }
 
 .account-item.has-error {
@@ -368,9 +403,9 @@ watch(accounts, initializeForms, {immediate: true});
     padding: 16px;
   }
 
-  .header-content {
+  .account-fields {
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
     align-items: stretch;
   }
 
@@ -378,12 +413,18 @@ watch(accounts, initializeForms, {immediate: true});
     text-align: center;
   }
 
+  .header {
+    button {
+      font-size: 12px;
+    }
+  }
+
   .account-item {
-    padding: 20px;
+    padding: 12px;
   }
 
   .account-fields {
-    gap: 12px;
+    gap: 4px;
   }
 }
 </style>
