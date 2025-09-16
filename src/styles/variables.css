@@ -1,0 +1,17 @@
+:root {
+    --gradient-start: #667eea;
+    --gradient-end: #764ba2;
+    --white: #ffffff;
+    --text-dark: #2d3748;
+    --error-red: #ff4757;
+    --border-light: #f1f3f4;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    --shadow-error: rgba(255, 71, 87, 0.1);
+    --hint-bg: rgba(255, 255, 255, 0.1);
+    --hint-border: rgba(255, 255, 255, 0.2);
+    --scrollbar-track: rgba(255, 255, 255, 0.1);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+    --error-bg: rgba(255, 71, 87, 0.1);
+}
